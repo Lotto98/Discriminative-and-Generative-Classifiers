@@ -1,25 +1,13 @@
 import numpy as np
 import statistics as st
 from tqdm.notebook import tqdm
-from typing import Union
 
-class KNN:
+from sklearn.base import BaseEstimator
+
+class KNN(BaseEstimator):
     
-    def __init__(self,k:Union[int,list[int]]=5):
-        
-        if isinstance(k,int):
-            self.k=[k]
-        else:
-            self.k=sorted(k, reverse=False)
-            
-            prev=None
-            for x in range(len(self.k)):
-                temp=self.k[x]
-                
-                if prev is not None:
-                    self.k[x]-=prev
-                           
-                prev=temp
+    def __init__(self,k:int=5):
+        self.k=k
                     
     def fit(self, X_data,y_data):
         self.X_train=X_data
@@ -29,30 +17,26 @@ class KNN:
         
         distances=np.linalg.norm(self.X_train - point, axis=1)
         
-        outputs=[]
+
         neighbors_y=np.array([])
-        
-        for k in self.k:
+
             
-            for _ in range(k):
-                
-                min_index=np.nanargmin(distances)
-                
-                neighbors_y=np.append(neighbors_y,self.y_train[min_index])
-                
-                distances[min_index]=np.nan
-    
-            outputs.append(st.mode(neighbors_y))
+        for _ in range(self.k):
             
-        return outputs
+            min_index=np.nanargmin(distances)
+            
+            neighbors_y=np.append(neighbors_y,self.y_train[min_index])
+            
+            distances[min_index]=np.nan
+
+        return st.mode(neighbors_y)
     
     def predict(self,data):
         
-        outputs=[np.array([]) for _ in range(len(self.k))]
+        output=np.array([])
         
-        for row in tqdm(data,desc='points'):
-        
-            for i,k in enumerate(self.__classify(row)):
-                outputs[i]=np.append(outputs[i],k)
+        for i,row in enumerate(data):
+            output=np.append(output,self.__classify(row))
+            print(i,'/',1000)
             
-        return outputs         
+        return output        
