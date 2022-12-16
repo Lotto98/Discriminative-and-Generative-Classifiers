@@ -1,10 +1,7 @@
 import pandas as pd
 from sklearn.base import BaseEstimator
-from scipy.integrate import quad
-
-from decimal import *
-
-import math
+from scipy.stats import beta
+import numpy as np
 
 class BetaDistribution_NaiveBayes(BaseEstimator):
     
@@ -16,11 +13,6 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
         self.train_y=train_y
         self.__param_estimation()
     
-    @staticmethod
-    def __B(x, alpha, beta):
-        return (x**(alpha-1))*((1-x)**beta-1)
-    
-    
     def __param_estimation(self):
         
         self.parameter_per_class={}
@@ -31,27 +23,28 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             
             means_pixels_class_n=images_class_n.mean(axis=0)
             variances_pixels_class_n=images_class_n.var(axis=0)
-        
-            ks_pixels_class_n=((means_pixels_class_n*(1-means_pixels_class_n))/variances_pixels_class_n)-1
+
+            unique_counts=images_class_n.nunique(axis=0, dropna=True)
             
-            ks_pixels_class_n=ks_pixels_class_n.fillna(0)
+            ks_pixels_class_n=((means_pixels_class_n*(1-means_pixels_class_n))/variances_pixels_class_n)-1
             
             alphas_pixels_class_n=ks_pixels_class_n*means_pixels_class_n
             betas_pixels_class_n=ks_pixels_class_n*(1-means_pixels_class_n)
-            
-            integrals_pixels_class_n=[]
-            
-            for item in zip(alphas_pixels_class_n, betas_pixels_class_n):
-                integral=quad(BetaDistribution_NaiveBayes.__B,0,1,args=(item[0],item[1]))
-                integrals_pixels_class_n.append(integral[0]+integral[1])
                 
             frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
                 
-            self.parameter_per_class[n]={'alpha':alphas_pixels_class_n,
-                                        'beta':betas_pixels_class_n,
-                                        'integral':integrals_pixels_class_n,
+            self.parameter_per_class[n]={'alpha':alphas_pixels_class_n.to_numpy(),
+                                        'beta':betas_pixels_class_n.to_numpy(),
+                                        'unique_counts':unique_counts,
+                                        'mean':means_pixels_class_n,
+                                        'var':variances_pixels_class_n,
+                                        'k':ks_pixels_class_n,
                                         'frequency':frequency}
+            #print(self.parameter_per_class)
+            
     def predict(self,test_X:pd.DataFrame):
+        
+        epsilon=0.1
         
         output=[]
         indexes=[]
@@ -59,7 +52,7 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
         for row_i,row in test_X.iterrows():
                 
             _max=0
-            _max_class=None
+            _max_class=-1
             
             for n in range(10):
                 
@@ -68,29 +61,36 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 product=1
                 
                 for i,x in enumerate(row):
-                    try:
-                        a=math.pow(x,class_parameters['alpha'][i]-1)                         
-                    except:
-                        a=1
                     
-                    try:
-                        b=math.pow(1-x,class_parameters['beta'][i]-1)
-                    except:
-                        b=1
-                    
-                    
-                    c=class_parameters['integral'][i]
-                    
-                    product*=c*a*b
-                    
-                    if product==0:
-                        break 
+                    if class_parameters['unique_counts'][i]!=1:
                         
+                        _alpha=class_parameters['alpha'][i]
+                        _beta=class_parameters['beta'][i]
+                        
+                        _mean=class_parameters['mean'][i]
+                        _var=class_parameters['var'][i]
+                        _k=class_parameters['k'][i]
+                        
+                        if _alpha>0 and _beta>0:
+                            prob=beta.cdf(x+epsilon,_alpha,_beta)-beta.cdf(x-epsilon,_alpha,_beta)
+                        
+                            if np.isnan(prob) or prob==float("inf") or prob==float("inf"):
+                                print(n,i)
+                                print(class_parameters['unique_counts'][i])
+                                print(x,_alpha,_beta,_mean,_var,_k) 
+                            else:
+                                #print(prob) 
+                                product*=prob 
+                            
+                            if product==0:
+                                break
+                    
                 probability=product*class_parameters['frequency']
                 
                 if probability>_max:
                     _max=probability
                     _max_class=n
+                    #print(_max)
             
             output.append(_max_class)
             indexes.append(row_i)
