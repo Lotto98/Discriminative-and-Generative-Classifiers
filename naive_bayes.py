@@ -21,6 +21,8 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             
             images_class_n=self.train_X[self.train_y["class"]==n]
             
+            #images_class_n=images_class_n.apply(lambda x: x + np.abs(np.random.normal(1,0.0001,1)) )
+            
             means_pixels_class_n=images_class_n.mean(axis=0)
             variances_pixels_class_n=images_class_n.var(axis=0)
 
@@ -40,7 +42,7 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                                         'var':variances_pixels_class_n,
                                         'k':ks_pixels_class_n,
                                         'frequency':frequency}
-            #print(self.parameter_per_class)
+            print(self.parameter_per_class)
             
     def predict(self,test_X:pd.DataFrame):
         
@@ -71,19 +73,28 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                         _var=class_parameters['var'][i]
                         _k=class_parameters['k'][i]
                         
-                        if _alpha>0 and _beta>0:
-                            prob=beta.cdf(x+epsilon,_alpha,_beta)-beta.cdf(x-epsilon,_alpha,_beta)
-                        
-                            if np.isnan(prob) or prob==float("inf") or prob==float("inf"):
-                                print(n,i)
-                                print(class_parameters['unique_counts'][i])
-                                print(x,_alpha,_beta,_mean,_var,_k) 
-                            else:
-                                #print(prob) 
-                                product*=prob 
                             
-                            if product==0:
-                                break
+                        prob=beta.cdf(x+epsilon,_alpha,_beta)-beta.cdf(x-epsilon,_alpha,_beta)
+                    
+                        if np.isnan(prob) or prob==float("inf") or prob==float("-inf"):
+                            """
+                            print(prob)
+                            print(n,i)
+                            print(class_parameters['unique_counts'][i])
+                            print(x,_alpha,_beta,_mean,_var,_k) 
+                            """
+                            pass
+                        else:
+                            #print(prob) 
+                            product*=prob 
+                    else:
+                        if x==class_parameters['mean'][i]:
+                            product*=1
+                        else:
+                            product*=0
+                        
+                    if product==0:
+                        break
                     
                 probability=product*class_parameters['frequency']
                 
