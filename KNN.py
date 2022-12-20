@@ -1,6 +1,6 @@
 import numpy as np
+import pandas as pd
 import statistics as st
-from tqdm.notebook import tqdm
 
 from sklearn.base import BaseEstimator
 
@@ -9,34 +9,27 @@ class KNN(BaseEstimator):
     def __init__(self,k:int=5):
         self.k=k
                     
-    def fit(self, X_data,y_data):
-        self.X_train=X_data
-        self.y_train=y_data
+    def fit(self, X_data:pd.DataFrame,y_data:pd.DataFrame | np.ndarray):
+        self.X_train=X_data.to_numpy(copy=True)
+        if isinstance(y_data,pd.DataFrame):
+            self.y_train=y_data.to_numpy(copy=True)
+        else:
+            self.y_train=np.copy(y_data)
     
-    def __classify(self,point):
+    def predict(self,test_X:pd.DataFrame):
         
-        distances=np.linalg.norm(self.X_train - point, axis=1)
+        test_X=test_X.to_numpy(copy=True)
         
-
-        neighbors_y=np.array([])
-
-            
-        for _ in range(self.k):
-            
-            min_index=np.nanargmin(distances)
-            
-            neighbors_y=np.append(neighbors_y,self.y_train[min_index])
-            
-            distances[min_index]=np.nan
-
-        return st.mode(neighbors_y)
-    
-    def predict(self,data):
+        output=[]
+        indexes=[]
         
-        output=np.array([])
-        
-        for i,row in enumerate(data):
-            output=np.append(output,self.__classify(row))
-            print(i,'/',1000)
+        for row_i,row in enumerate( (test_X) ):
             
-        return output        
+            distances=np.linalg.norm(self.X_train - row, axis=1)
+            
+            mode=st.mode( ( self.y_train[ np.argsort(distances) ][:self.k] ).flatten()  )
+            
+            output.append(mode)
+            indexes.append(row_i)    
+            
+        return pd.Series(data=output,index=indexes)      
