@@ -1,4 +1,5 @@
 
+from typing import Tuple
 from sklearn.metrics import accuracy_score,confusion_matrix,ConfusionMatrixDisplay
 from sklearn.model_selection import GridSearchCV
 
@@ -9,10 +10,14 @@ import pickle
 
 from IPython.display import clear_output
 
-def model_selector(model:BaseEstimator,properties:dict,X:pd.DataFrame,Y:pd.DataFrame):
+def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame] :
     
-    grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,return_train_score=True,verbose=5)
-    grid.fit(X,Y.values.ravel())
+    grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,return_train_score=True,verbose=5,n_jobs=n_jobs)
+    
+    if y_as_numpy:
+        grid.fit(X,Y.values.ravel())
+    else:
+        grid.fit(X,Y)
     
     clear_output(wait=True)
     
@@ -48,23 +53,25 @@ def read_result_from_file(result_filename:str):
         
     return result
 
-def save_or_load(model:BaseEstimator,result:pd.DataFrame,model_name:str):
+def load(model_name:str):
+    
+    model_filename = model_name+'.sav'
+    result_filename = 'result_'+model_name+'.sav'
+        
+    model=read_model_from_file(model_filename)
+    result=read_result_from_file(result_filename)
+        
+    return model,result
+
+def save(model:BaseEstimator,result:pd.DataFrame,model_name:str):
     
     model_filename = model_name+'.sav'
     result_filename = 'result_'+model_name+'.sav'
     
-    if result is not None:
-        save_model_to_file(model,model_filename)
-        save_result_to_file(result,result_filename)
-    else:
-        
-        model=read_model_from_file(model_filename)
-        result=read_result_from_file(result_filename)
-        
-    return model,result
+    save_model_to_file(model,model_filename)
+    save_result_to_file(result,result_filename)
 
 
-
-def confusion_matrix(test_y:pd.DataFrame, pred_y:pd.DataFrame):
+def plot_confusion_matrix(test_y:pd.DataFrame, pred_y:pd.DataFrame):
     cm = confusion_matrix(test_y, pred_y, labels=[x for x in range(10)])
     ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=[x for x in range(10)]).plot()

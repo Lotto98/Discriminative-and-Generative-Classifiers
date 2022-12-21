@@ -1,7 +1,9 @@
 import pandas as pd
-from sklearn.base import BaseEstimator
-from scipy.stats import beta
 import numpy as np
+
+from sklearn.base import BaseEstimator
+
+from scipy.stats import beta
 
 class BetaDistribution_NaiveBayes(BaseEstimator):
     
@@ -12,8 +14,10 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
         self.train_X=train_X
         self.train_y=train_y
         self.__param_estimation()
+        
+        return self
     
-    def __param_estimation(self):
+    def __param_estimation(self) -> None:
         
         self.parameter_per_class={}
         
@@ -48,7 +52,7 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                                         'frequency':frequency}
             #print(self.parameter_per_class)
     
-    def predict(self,test_X:pd.DataFrame):
+    def predict(self,test_X:pd.DataFrame) -> pd.Series:
     
         epsilon=0.1
         
