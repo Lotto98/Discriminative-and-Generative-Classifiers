@@ -10,8 +10,6 @@ import pickle
 
 from IPython.display import clear_output
 
-SVM_properties={'C':[0.05,0.1,0.5,1,10,25,50,75,100,150,200]}
-
 def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame] :
     
     grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,return_train_score=True,verbose=5,n_jobs=n_jobs)
