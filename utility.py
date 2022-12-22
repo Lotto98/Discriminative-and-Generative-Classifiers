@@ -14,7 +14,7 @@ SVM_properties={'C':[0.05,0.1,0.5,1,10,25,50,75,100,150,200]}
 
 def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame] :
     
-    grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,return_train_score=True,verbose=5,n_jobs=n_jobs)
+    grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,n_jobs=n_jobs)
     
     if y_as_numpy:
         grid.fit(X,Y.values.ravel())
@@ -55,7 +55,7 @@ def read_result_from_file(result_filename:str):
         
     return result
 
-def load(model_name:str):
+def load(model_name:str)->Tuple[BaseEstimator,pd.DataFrame]:
     
     model_filename = model_name+'.sav'
     result_filename = 'result_'+model_name+'.sav'
