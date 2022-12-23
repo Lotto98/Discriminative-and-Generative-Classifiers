@@ -12,21 +12,21 @@ from IPython.display import clear_output
 
 def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame,float] :
     
-    grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,n_jobs=n_jobs)
+    clf=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,refit=False,n_jobs=n_jobs)
     
     if y_as_numpy:
-        grid.fit(X,Y.values.ravel())
+        clf.fit(X,Y.values.ravel())
     else:
-        grid.fit(X,Y)
+        clf.fit(X,Y)
     
     clear_output(wait=True)
     
-    result=pd.DataFrame(grid.cv_results_)
+    result=pd.DataFrame(clf.cv_results_)
     
-    print ("Best Score: ", grid.best_score_)
-    print ("Best Params: ", grid.best_params_)
+    print ("Best Score: ", clf.best_score_)
+    print ("Best Params: ", clf.best_params_)
     
-    return grid.best_estimator_,result,grid.refit_time
+    return clf.best_estimator_,result
 
 def save_model_to_file(model:BaseEstimator,model_filename:str):
     
