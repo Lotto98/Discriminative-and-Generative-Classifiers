@@ -10,7 +10,7 @@ import pickle
 
 from IPython.display import clear_output
 
-def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame] :
+def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame,float] :
     
     grid=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,n_jobs=n_jobs)
     
@@ -26,7 +26,7 @@ def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.D
     print ("Best Score: ", grid.best_score_)
     print ("Best Params: ", grid.best_params_)
     
-    return grid.best_estimator_,result
+    return grid.best_estimator_,result,grid.refit_time
 
 def save_model_to_file(model:BaseEstimator,model_filename:str):
     
