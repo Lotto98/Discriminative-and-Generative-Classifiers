@@ -20,18 +20,18 @@ class KNN(BaseEstimator):
     
     def predict( self, test_X:pd.DataFrame ) -> pd.Series:
         
+        indexes=test_X.index.to_list()
+        
         test_X=test_X.to_numpy()
         
         output=[]
-        indexes=[]
         
-        for row_i,row in enumerate( (test_X) ):
+        for row in test_X:
             
             distances=np.linalg.norm(self.X_train - row, axis=1)
             
             mode=st.mode( ( self.y_train[ np.argsort(distances) ][:self.k] ).flatten()  )
             
-            output.append(mode)
-            indexes.append(row_i)    
+            output.append(mode)    
             
         return pd.Series(data=output,index=indexes)      
