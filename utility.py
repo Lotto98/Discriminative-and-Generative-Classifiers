@@ -12,7 +12,7 @@ from IPython.display import clear_output
 
 def model_selector( model:BaseEstimator, properties:dict, X:pd.DataFrame, Y:pd.DataFrame, n_jobs:int = 1,y_as_numpy:bool = True ) ->Tuple[BaseEstimator,pd.DataFrame,float] :
     
-    clf=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,refit=False,n_jobs=n_jobs)
+    clf=GridSearchCV(model,properties,scoring="accuracy",cv=10,verbose=5,n_jobs=n_jobs)
     
     if y_as_numpy:
         clf.fit(X,Y.values.ravel())
