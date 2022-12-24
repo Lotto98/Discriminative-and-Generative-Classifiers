@@ -13,9 +13,9 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
     def fit(self,train_X:pd.DataFrame,train_y:pd.DataFrame):
         self.train_X=train_X
         self.train_y=train_y
-        self.__param_estimation()
+        p=self.__param_estimation()
         
-        return self
+        return self,p
     
     def __param_estimation(self) -> None:
         
@@ -29,7 +29,9 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             
             means_pixels_class_n=images_class_n.mean(axis=0)
             variances_pixels_class_n=images_class_n.var(axis=0)
-
+            
+            means_squared_pixels_class_n=(images_class_n**2).mean(axis=0)
+            
             unique_counts=images_class_n.nunique(axis=0, dropna=True)
             
             unique_counts[unique_counts > 1] = -1
@@ -40,6 +42,10 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             
             alphas_pixels_class_n=ks_pixels_class_n*means_pixels_class_n
             betas_pixels_class_n=ks_pixels_class_n*(1-means_pixels_class_n)
+            
+            alphas_pixels_class_n[alphas_pixels_class_n<=0]=alphas_pixels_class_n[alphas_pixels_class_n>0].min()
+            betas_pixels_class_n[betas_pixels_class_n<=0]=betas_pixels_class_n[betas_pixels_class_n>0].min()
+                
                 
             frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
                 
@@ -47,8 +53,10 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                                         'beta':betas_pixels_class_n.to_numpy(),
                                         'unique':unique_counts.to_numpy(),
                                         'mean':means_pixels_class_n,
-                                        'var':variances_pixels_class_n,
-                                        'k':ks_pixels_class_n,
+                                        'squared_mean':means_squared_pixels_class_n,
+                                        
+                                        #'var':variances_pixels_class_n,
+                                        #'k':ks_pixels_class_n,
                                         'frequency':frequency}
             #print(self.parameter_per_class)
     
@@ -74,6 +82,9 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 _beta=class_parameters['beta']
                 _unique=class_parameters['unique']
                 
+                _mean=class_parameters['mean']
+                _squared_mean=class_parameters['squared_mean']
+                
                 
                 beta_probabilities=beta.cdf(row+epsilon,_alpha,_beta)-beta.cdf(row-epsilon,_alpha,_beta)               
                 
@@ -86,6 +97,12 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 
                 #print("alpha",_alpha[ np.argwhere( np.isnan(beta_probabilities) ) ])
                 #print("beta",_beta[ np.argwhere( np.isnan(beta_probabilities) ) ])
+                
+                """
+                for e,p in enumerate(beta_probabilities):
+                    if  np.isnan(p):
+                        print(_mean[e]<=_squared_mean[e])
+                """
                         
                 np.nan_to_num(beta_probabilities, copy=False, nan=1.0)
                 
