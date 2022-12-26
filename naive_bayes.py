@@ -23,14 +23,16 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
         
         for n in range(10):
             
+            #images of class n
             images_class_n=self.train_X[self.train_y["class"]==n]
             
-            #images_class_n=images_class_n.apply(lambda x: x + np.abs(np.random.normal(1,0.0001,1)) )
-            
+            #mean and variance for each pixel of class n
             means_pixels_class_n=images_class_n.mean(axis=0)
             variances_pixels_class_n=images_class_n.var(axis=0)
             
-            means_squared_pixels_class_n=(images_class_n**2).mean(axis=0)
+            #means_squared_pixels_class_n=(images_class_n**2).mean(axis=0)
+            
+            #unique value pixel 
             
             unique_counts=images_class_n.nunique(axis=0, dropna=True)
             
@@ -38,27 +40,25 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             
             unique_counts[unique_counts == 1] = means_pixels_class_n[unique_counts == 1]
             
+            #alpha and beta estimation
             ks_pixels_class_n=((means_pixels_class_n*(1-means_pixels_class_n))/variances_pixels_class_n)-1
             
             alphas_pixels_class_n=ks_pixels_class_n*means_pixels_class_n
             betas_pixels_class_n=ks_pixels_class_n*(1-means_pixels_class_n)
             
+            #negative alpha and beta
             alphas_pixels_class_n[alphas_pixels_class_n<=0]=alphas_pixels_class_n[alphas_pixels_class_n>0].min()
             betas_pixels_class_n[betas_pixels_class_n<=0]=betas_pixels_class_n[betas_pixels_class_n>0].min()
                 
-                
+            #class frequency    
             frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
-                
+            
             self.parameter_per_class[n]={'alpha':alphas_pixels_class_n.to_numpy(),
                                         'beta':betas_pixels_class_n.to_numpy(),
                                         'unique':unique_counts.to_numpy(),
                                         'mean':means_pixels_class_n,
-                                        'squared_mean':means_squared_pixels_class_n,
-                                        
-                                        #'var':variances_pixels_class_n,
-                                        #'k':ks_pixels_class_n,
+                                        #'squared_mean':means_squared_pixels_class_n,
                                         'frequency':frequency}
-            #print(self.parameter_per_class)
     
     def predict(self,test_X:pd.DataFrame) -> pd.Series:
     
@@ -111,7 +111,6 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 if probability>_max:
                     _max=probability
                     _max_class=n
-                    #print(_max)
             
             output.append(_max_class)
             indexes.append(row_i)
