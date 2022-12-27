@@ -49,14 +49,18 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             #negative alpha and beta
             alphas_pixels_class_n[alphas_pixels_class_n<=0]=alphas_pixels_class_n[alphas_pixels_class_n>0].min()
             betas_pixels_class_n[betas_pixels_class_n<=0]=betas_pixels_class_n[betas_pixels_class_n>0].min()
-                
+            
+            #Beta means
+            beta_means_class_n=(alphas_pixels_class_n)/(alphas_pixels_class_n+betas_pixels_class_n)
+            beta_means_class_n[unique_counts != -1]=unique_counts[unique_counts != -1]
+            
             #class frequency    
             frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
             
             self.parameter_per_class[n]={'alpha':alphas_pixels_class_n.to_numpy(),
                                         'beta':betas_pixels_class_n.to_numpy(),
                                         'unique':unique_counts.to_numpy(),
-                                        'mean':means_pixels_class_n,
+                                        'Beta_means':beta_means_class_n.to_numpy(),
                                         #'squared_mean':means_squared_pixels_class_n,
                                         'frequency':frequency}
     
@@ -82,10 +86,6 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 _beta=class_parameters['beta']
                 _unique=class_parameters['unique']
                 
-                _mean=class_parameters['mean']
-                _squared_mean=class_parameters['squared_mean']
-                
-                
                 beta_probabilities=beta.cdf(row+epsilon,_alpha,_beta)-beta.cdf(row-epsilon,_alpha,_beta)               
                 
                 #unique values
@@ -98,13 +98,11 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
                 #print("alpha",_alpha[ np.argwhere( np.isnan(beta_probabilities) ) ])
                 #print("beta",_beta[ np.argwhere( np.isnan(beta_probabilities) ) ])
                 
-                """
-                for e,p in enumerate(beta_probabilities):
-                    if  np.isnan(p):
-                        print(_mean[e]<=_squared_mean[e])
-                """
+                to_print=np.count_nonzero(np.isnan(beta_probabilities))
+                if to_print!=0:
+                    print(to_print)
                         
-                np.nan_to_num(beta_probabilities, copy=False, nan=1.0)
+                #np.nan_to_num(beta_probabilities, copy=False, nan=1.0)
                 
                 probability=class_parameters['frequency']*np.product(beta_probabilities)
                 
