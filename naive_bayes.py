@@ -5,6 +5,8 @@ from sklearn.base import BaseEstimator
 
 from scipy.stats import beta
 
+import matplotlib.pyplot as plt
+
 class BetaDistribution_NaiveBayes(BaseEstimator):
     
     def __init__(self) -> None:
@@ -13,9 +15,9 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
     def fit(self,train_X:pd.DataFrame,train_y:pd.DataFrame):
         self.train_X=train_X
         self.train_y=train_y
-        p=self.__param_estimation()
+        self.__param_estimation()
         
-        return self,p
+        return self
     
     def __param_estimation(self) -> None:
         
@@ -30,38 +32,34 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             means_pixels_class_n=images_class_n.mean(axis=0)
             variances_pixels_class_n=images_class_n.var(axis=0)
             
-            #means_squared_pixels_class_n=(images_class_n**2).mean(axis=0)
-            
-            #unique value pixel 
-            
-            unique_counts=images_class_n.nunique(axis=0, dropna=True)
-            
-            unique_counts[unique_counts > 1] = -1
-            
-            unique_counts[unique_counts == 1] = means_pixels_class_n[unique_counts == 1]
-            
             #alpha and beta estimation
             ks_pixels_class_n=((means_pixels_class_n*(1-means_pixels_class_n))/variances_pixels_class_n)-1
             
             alphas_pixels_class_n=ks_pixels_class_n*means_pixels_class_n
             betas_pixels_class_n=ks_pixels_class_n*(1-means_pixels_class_n)
             
+            #class frequency    
+            frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
+            
             #negative alpha and beta
             alphas_pixels_class_n[alphas_pixels_class_n<=0]=alphas_pixels_class_n[alphas_pixels_class_n>0].min()
             betas_pixels_class_n[betas_pixels_class_n<=0]=betas_pixels_class_n[betas_pixels_class_n>0].min()
+            
+            #unique value pixel (for nan value alphas and betas)
+            unique_counts=images_class_n.nunique(axis=0, dropna=True)
+            
+            unique_counts[unique_counts > 1] = -1
+            
+            unique_counts[unique_counts == 1] = means_pixels_class_n[unique_counts == 1]
             
             #Beta means
             beta_means_class_n=(alphas_pixels_class_n)/(alphas_pixels_class_n+betas_pixels_class_n)
             beta_means_class_n[unique_counts != -1]=unique_counts[unique_counts != -1]
             
-            #class frequency    
-            frequency=self.train_y[self.train_y["class"]==n].size/self.train_y["class"].size
-            
-            self.parameter_per_class[n]={'alpha':alphas_pixels_class_n.to_numpy(),
-                                        'beta':betas_pixels_class_n.to_numpy(),
+            self.parameter_per_class[n]={'alphas':alphas_pixels_class_n.to_numpy(),
+                                        'betas':betas_pixels_class_n.to_numpy(),
                                         'unique':unique_counts.to_numpy(),
                                         'Beta_means':beta_means_class_n.to_numpy(),
-                                        #'squared_mean':means_squared_pixels_class_n,
                                         'frequency':frequency}
     
     def predict(self,test_X:pd.DataFrame) -> pd.Series:
@@ -80,29 +78,19 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
              
             for n in range(10):
                 
+                #parameters
                 class_parameters=self.parameter_per_class[n]
                 
-                _alpha=class_parameters['alpha']
-                _beta=class_parameters['beta']
+                _alpha=class_parameters['alphas']
+                _beta=class_parameters['betas']
                 _unique=class_parameters['unique']
                 
+                #integral
                 beta_probabilities=beta.cdf(row+epsilon,_alpha,_beta)-beta.cdf(row-epsilon,_alpha,_beta)               
                 
                 #unique values
-                
                 beta_probabilities[ np.logical_and(_unique!=-1, _unique != row) ] = 0
                 beta_probabilities[ np.logical_and(_unique!=-1, _unique == row) ] = 1
-                
-                #alpha and beta < 0
-                
-                #print("alpha",_alpha[ np.argwhere( np.isnan(beta_probabilities) ) ])
-                #print("beta",_beta[ np.argwhere( np.isnan(beta_probabilities) ) ])
-                
-                to_print=np.count_nonzero(np.isnan(beta_probabilities))
-                if to_print!=0:
-                    print(to_print)
-                        
-                #np.nan_to_num(beta_probabilities, copy=False, nan=1.0)
                 
                 probability=class_parameters['frequency']*np.product(beta_probabilities)
                 
@@ -114,4 +102,19 @@ class BetaDistribution_NaiveBayes(BaseEstimator):
             indexes.append(row_i)
             
         return pd.Series(data=output,index=indexes)
+    
+    def mean_plot(self)->None:
         
+        _,axs=plt.subplots(3,4)
+        
+        axs = [item for sublist in axs for item in sublist]
+        
+        axs[10].axis('off')
+        axs[11].axis('off')
+        
+        for digit in range(10):
+            
+            means_class_n=self.parameter_per_class[digit]["Beta_means"]
+            
+            axs[digit].imshow(means_class_n.reshape(28, 28))
+            axs[digit].axis('off')
