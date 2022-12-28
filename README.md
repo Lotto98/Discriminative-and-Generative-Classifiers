@@ -7,7 +7,7 @@ Train the following classifiers on the data-set:
 - SVM using linear, polynomial of degree 2, and RBF kernels;
 - Random Forest;
 - Naive Bayes classifier where each pixel is distributed according to a Beta distribution of parameters $\alpha, \beta$: $$d(x,\alpha,\beta)=\frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)} x^{(\alpha-1)} (1-x)^{(\beta-1)}$$
--k-NN.
+- k-NN.
 
 You can use scikit-learn or any other library for SVM and random forests, but you must implement the Naive Bayes and k-NN classifiers yourself.
 
