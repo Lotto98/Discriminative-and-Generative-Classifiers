@@ -16,3 +16,4 @@ Use 10 way cross validation to optimize the parameters for each classifier.
 Provide the code, the models on the training set, and the respective performances in testing and in 10 way cross validation.
 
 Explain the differences between the models, both in terms of classification performance, and in terms of computational requirements (timings) in training and in prediction.
+prova
